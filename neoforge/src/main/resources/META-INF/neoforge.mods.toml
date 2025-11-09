@@ -1,0 +1,29 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "LGPL-3.0"
+
+[[mods]]
+modId = "enchantmentlevelbreak"
+version = "${version}"
+displayName = "Enchantment Level Break"
+description = '''
+Players can enchant any enchantment beyond the original 255 limit
+'''
+authors = "lirxowo"
+
+[[mixins]]
+config = "enchantmentlevelbreak.mixins.json"
+
+[[dependencies.enchantmentlevelbreak]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.enchantmentlevelbreak]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.9,1.21.11)"
+ordering = "NONE"
+side = "BOTH"

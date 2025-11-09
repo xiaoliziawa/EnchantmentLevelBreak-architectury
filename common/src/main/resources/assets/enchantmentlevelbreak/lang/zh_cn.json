@@ -1,0 +1,6 @@
+{
+  "command.enchantmentlevelbreak.error.no_item": "你必须手持一个物品才能附魔",
+  "command.enchantmentlevelbreak.error.invalid_enchantment": "无效的附魔: %s",
+  "command.enchantmentlevelbreak.error.level_too_high": "附魔等级不能超过 2147483647",
+  "command.enchantmentlevelbreak.success": "成功将 %s 附加到物品上"
+}

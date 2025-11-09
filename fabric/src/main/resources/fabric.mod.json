@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "enchantmentlevelbreak",
+  "version": "${version}",
+  "name": "Enchantment Level Break",
+  "description": "Players can enchant any enchantment beyond the original 255 limit",
+  "authors": [
+    "lirxowo"
+  ],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/enchantmentlevelbreak/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.lirxowo.enchantmentlevelbreak.fabric.EnchantmentlevelbreakFabric"
+    ]
+  },
+  "mixins": [
+    "enchantmentlevelbreak.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": ">=1.21.9 <1.21.11",
+    "java": ">=21"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
