@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.lirxowo.enchantmentlevelbreak.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AnvilMenuMixin",
+    "Command",
+    "EnchantmentDisplayMixin",
+    "EnchantmentHelperMixin",
+    "Helper",
+    "ItemEnchantmentsConstructorMixin",
+    "ItemEnchantmentsMixin",
+    "ItemStackMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
