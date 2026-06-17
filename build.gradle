@@ -1,6 +1,21 @@
 plugins {
-    // see https://fabricmc.net/develop/ for new versions
-    id 'net.fabricmc.fabric-loom' version '1.15.5' apply false
+    // see https://maven.fabricmc.net/fabric-loom/fabric-loom.gradle.plugin/maven-metadata.xml for new versions
+    id 'net.fabricmc.fabric-loom' version '1.16.3' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
+}
+
+// Builds both the Fabric and NeoForge modules and collects the mod jars into the root 'libs' folder for easy access.
+tasks.register('buildAll', Copy) {
+    group = 'build'
+    description = 'Builds the Fabric and NeoForge modules and collects their jars into the root libs folder'
+    dependsOn ':fabric:build', ':neoforge:build'
+
+    ['fabric', 'neoforge'].each { module ->
+        from(project(":${module}").layout.buildDirectory.dir('libs')) {
+            include '*.jar'
+            exclude '*-sources.jar', '*-javadoc.jar'
+        }
+    }
+    into rootProject.layout.projectDirectory.dir('libs')
 }
