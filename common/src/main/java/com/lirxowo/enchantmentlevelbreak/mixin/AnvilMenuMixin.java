@@ -1,17 +1,17 @@
 package com.lirxowo.enchantmentlevelbreak.mixin;
 
+import com.lirxowo.enchantmentlevelbreak.config.ModConfig;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.Container;
 import net.minecraft.world.inventory.AnvilMenu;
-import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.DataSlot;
-import net.minecraft.world.inventory.ItemCombinerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import com.lirxowo.enchantmentlevelbreak.config.ModConfig;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,93 +20,81 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AnvilMenu.class)
-public abstract class AnvilMenuMixin extends ItemCombinerMenu {
-    @Shadow
-    public int repairItemCountCost;
-    @Shadow
-    private final DataSlot cost = DataSlot.standalone();
-
-    protected AnvilMenuMixin(int containerId, ContainerLevelAccess access) {
-        super(null, containerId, null, access, null);
-    }
-
-    @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
-    private void onCreateResult(CallbackInfo ci) {
-        ItemStack left = this.inputSlots.getItem(0);
-        ItemStack right = this.inputSlots.getItem(1);
-
-        if (!left.isEmpty() && !right.isEmpty()) {
-            handleAnvilOperation(left, right, ci);
-        }
-    }
-
+public abstract class AnvilMenuMixin {
     @Unique
-    private void handleAnvilOperation(ItemStack left, ItemStack right, CallbackInfo ci) {
-        boolean sameItem = left.is(right.getItem());
-        boolean rightIsBook = right.is(Items.ENCHANTED_BOOK);
+    private static final int MAX_ANVIL_COST = 50;
 
-        ItemEnchantments leftEnchants = left.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
-        ItemEnchantments rightEnchants = right.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
-        ItemEnchantments leftStoredEnchants = left.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
-        ItemEnchantments rightStoredEnchants = right.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
+    @Shadow
+    @Final
+    private DataSlot cost;
 
-        ItemEnchantments effectiveLeft = !leftStoredEnchants.isEmpty() ? leftStoredEnchants : leftEnchants;
-        ItemEnchantments effectiveRight = !rightStoredEnchants.isEmpty() ? rightStoredEnchants : rightEnchants;
-
-        if (sameItem) {
-            if (!effectiveLeft.isEmpty() || !effectiveRight.isEmpty()) {
-                handleEnchantmentMerge(left, effectiveLeft, effectiveRight, true, ci);
-            }
+    @Inject(method = "createResult", at = @At("RETURN"))
+    private void onCreateResult(CallbackInfo ci) {
+        ItemCombinerMenuAccessor accessor = (ItemCombinerMenuAccessor) this;
+        Container inputSlots = accessor.enchantmentLevelBreak$getInputSlots();
+        ItemStack left = inputSlots.getItem(0);
+        ItemStack right = inputSlots.getItem(1);
+        if (left.isEmpty() || right.isEmpty()) {
             return;
         }
-        if (!effectiveRight.isEmpty() && (rightIsBook || !rightEnchants.isEmpty())) {
-            handleEnchantmentMerge(left, effectiveLeft, effectiveRight, false, ci);
-        }
-    }
 
-    @Unique
-    private void handleEnchantmentMerge(ItemStack target, ItemEnchantments leftEnchants, ItemEnchantments rightEnchants, boolean isSameItemMerge, CallbackInfo ci) {
-        ItemStack result = target.copy();
-        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(leftEnchants);
+        ItemEnchantments rightEnchants = EnchantmentHelper.getEnchantmentsForCrafting(right);
+        if (rightEnchants.isEmpty()) {
+            return;
+        }
+
+        boolean sameItem = left.is(right.getItem());
+        if (!sameItem && !right.is(Items.ENCHANTED_BOOK)) {
+            return;
+        }
+
+        ItemStack result = accessor.enchantmentLevelBreak$getResultSlots().getItem(0);
+        if (result.isEmpty()) {
+            result = left.copy();
+        }
+        if (!EnchantmentHelper.canStoreEnchantments(result)) {
+            return;
+        }
+
+        ItemEnchantments leftEnchants = EnchantmentHelper.getEnchantmentsForCrafting(left);
+        ItemEnchantments.Mutable merged = new ItemEnchantments.Mutable(leftEnchants);
         boolean anyApplied = false;
-        int totalCost = 0;
+        long totalCost = 0L;
 
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : rightEnchants.entrySet()) {
             Holder<Enchantment> enchantment = entry.getKey();
-            int rightLevel = entry.getIntValue();
-            boolean canApply = isSameItemMerge || ModConfig.getInstance().isAllowAnyEnchantment() || enchantment.value().canEnchant(target);
-            if (canApply) {
-                int leftLevel = mutable.getLevel(enchantment);
-                int newLevel = calculateNewLevel(leftLevel, rightLevel);
-                newLevel = Math.min(newLevel, ModConfig.getInstance().getMaxEnchantmentLevel());
-                mutable.set(enchantment, newLevel);
-                totalCost += newLevel;
-                anyApplied = true;
+            boolean canApply = sameItem
+                    || ModConfig.getInstance().isAllowAnyEnchantment()
+                    || enchantment.value().canEnchant(left);
+            if (!canApply) {
+                continue;
             }
+            int newLevel = calculateNewLevel(leftEnchants.getLevel(enchantment), entry.getIntValue());
+            merged.set(enchantment, newLevel);
+            totalCost += newLevel;
+            anyApplied = true;
         }
 
-        if (anyApplied) {
-            if (result.is(Items.ENCHANTED_BOOK)) {
-                result.set(DataComponents.STORED_ENCHANTMENTS, mutable.toImmutable());
-                if (result.has(DataComponents.ENCHANTMENTS)) result.remove(DataComponents.ENCHANTMENTS);
-            } else {
-                result.set(DataComponents.ENCHANTMENTS, mutable.toImmutable());
-            }
-            this.resultSlots.setItem(0, result);
-            this.repairItemCountCost = Math.min(totalCost, 50);
-            this.cost.set(this.repairItemCountCost);
-            ci.cancel();
+        if (!anyApplied) {
+            return;
         }
+
+        EnchantmentHelper.setEnchantments(result, merged.toImmutable());
+        accessor.enchantmentLevelBreak$getResultSlots().setItem(0, result);
+        this.cost.set((int) Math.max(1L, Math.min(totalCost, MAX_ANVIL_COST)));
+        ((AnvilMenu) (Object) this).broadcastChanges();
     }
 
     @Unique
     private int calculateNewLevel(int leftLevel, int rightLevel) {
+        long newLevel;
         if (ModConfig.getInstance().isAllowLevelStacking()) {
-            return leftLevel + rightLevel;
+            newLevel = (long) leftLevel + rightLevel;
         } else if (ModConfig.getInstance().isAllowVanillaLevelStacking() && leftLevel == rightLevel) {
-            return leftLevel + 1;
+            newLevel = (long) leftLevel + 1;
         } else {
-            return Math.max(leftLevel, rightLevel);
+            newLevel = Math.max(leftLevel, rightLevel);
         }
+        return (int) Math.min(newLevel, ModConfig.getInstance().getMaxEnchantmentLevel());
     }
 }
