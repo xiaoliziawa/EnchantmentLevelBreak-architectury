@@ -2,17 +2,18 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.lirxowo.enchantmentlevelbreak.mixin",
-  "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "AnvilMenuMixin",
     "Command",
     "EnchantmentDisplayMixin",
-    "ItemCombinerMenuAccessor",    "ItemEnchantmentsConstructorMixin",
+    "ItemCombinerMenuAccessor",
+    "ItemEnchantmentsConstructorMixin",
     "ItemEnchantmentsMixin",
     "ItemStackMixin"
   ],
   "client": [],
+  "server": [],
   "injectors": {
     "defaultRequire": 1
   },
