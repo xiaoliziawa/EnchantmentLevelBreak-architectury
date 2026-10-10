@@ -5,6 +5,7 @@ import com.lirxowo.enchantmentlevelbreak.config.ModConfig;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.config.ModConfig.Type;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -46,7 +47,7 @@ public class NeoForgeConfig extends ModConfig {
     private static int maxEnchantmentLevel;
 
     public static void init(ModContainer modContainer) {
-        modContainer.registerConfig(net.neoforged.fml.config.ModConfig.Type.COMMON, SPEC);
+        modContainer.registerConfig(Type.LOCAL, SPEC, Enchantmentlevelbreak.MOD_ID + "-common.toml");
         ModConfig.setInstance(new NeoForgeConfig());
     }
 
